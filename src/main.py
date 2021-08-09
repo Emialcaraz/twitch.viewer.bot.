@@ -1,12 +1,15 @@
 from settings import EnvironmentTypeEnum, settings
 from dv_twitch_viewer.logger import configure_logger
 from dv_twitch_viewer.orchestrator import Orchestrator
-
+import logging
 
 def main():
     configure_logger()
     orch = Orchestrator()
     orch.start()
+
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     try:
         orch.run()

@@ -1,13 +1,12 @@
 from dv_twitch_viewer.constants import FILE
-from streamlink import Streamlink
-import random
-import requests
-import sys
+import requests, csv
+import pandas as pd
 
 
 def get_proxies():
-    proxies_lines = [line.rstrip("\n") for line in open(FILE)]
-    return proxies_lines
+    proxies = pd.read_csv(FILE, index_col=False, header=None)
+    proxies = proxies[0].to_list()
+    return proxies
 
 
 def get_ua():

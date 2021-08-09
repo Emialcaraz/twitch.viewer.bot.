@@ -3,15 +3,10 @@ import time
 import requests
 
 from settings import settings
-from threading import Timer
-from random import shuffle
-from fake_useragent import UserAgent
 from streamlink import Streamlink
-
+from threading import Thread
 from dv_twitch_viewer.logger import get_logger
 from dv_twitch_viewer import constants
-from collections import Counter
-from typing import List
 from dv_twitch_viewer.utils import get_proxies, get_ua
 
 
@@ -31,35 +26,45 @@ class Orchestrator:
     def run(self):
         """Run orchestrator process"""
         self._logger.info("Running orchestrator...")
+
         twitch = TwitchOrchestrator()
         all_proxies = twitch.start()
+        threads = []
+
         for i in range(0, len(all_proxies)):
-            threaded = Timer(1, self.get_url, args=(all_proxies[i],))
-            threaded.start()
+            threaded = Thread(target=self.get_url, args=(all_proxies[i],))
+            threads.append(threaded)
+
+        # Start all threads
+        for x in threads:
+            x.start()
+
+        # Wait for all of them to finish
+        for x in threads:
+            x.join()
 
     def get_url(self, proxy_data):
         session = Streamlink()
         session.set_option("http-proxy", proxy_data['proxy'])
         session.set_option("https-proxy", proxy_data['proxy'])
         session.set_option("http-headers",
-                           {'User-Agent': proxy_data['user_agent'], "Client-ID": "ewvlchtxgqq88ru9gmfp1gmyt6h2b93"})
+                           {'User-Agent': proxy_data['user_agent']})
 
         streams = session.streams(proxy_data['channel'])
-        current_url = streams['worst'].url
-        self._logger.info(f"creating viewer with {proxy_data['proxy']}", )
-        return self.run_viewer(proxy_data, current_url)
+        if streams:
+            current_url = streams['worst'].url
 
-    def run_viewer(self, proxy_data, current_url):
+            self._logger.info(f"creating viewer with {proxy_data['proxy']}", )
 
-        timeout = 500  # [seconds]
-        timeout_start = time.time()
+            timeout = random.randint(700, 900)  # 15 minutes in seconds
+            timeout_start = time.time()
 
-        while time.time() < timeout_start + timeout:
-            time.sleep(2)
-            self.open_url(proxy_data=proxy_data, current_url=current_url)
-        else:
-            self._logger.info(f"Stopping viewer with {proxy_data['proxy']}", )
-            self.get_url(proxy_data)
+            while time.time() < timeout_start + timeout:
+                self.open_url(proxy_data=proxy_data, current_url=current_url)
+                time.sleep(2)
+            else:
+                self._logger.info(f"Stopping viewer with {proxy_data['proxy']}", )
+                self.get_url(proxy_data)
 
     def open_url(self, proxy_data, current_url):
         try:
@@ -87,6 +92,9 @@ class TwitchOrchestrator:
 
         start_time = time.time()
         proxies = get_proxies()
+
+        self._logger.info('Creating views: {}'.format(len(proxies)))
+
         lines = get_ua()
         all_proxies = []
 
@@ -100,8 +108,13 @@ class TwitchOrchestrator:
                        'Pragma': 'no-cache'
                        }
 
-            all_proxies.append({'proxy': p, 'time': start_time, 'url': '', 'channel': channel_url, 'headers': headers,
-                                'user_agent': user_agent})
+            all_proxies.append({'proxy': p,
+                                'time': start_time,
+                                'url': '',
+                                'channel': channel_url,
+                                'headers': headers,
+                                'user_agent': user_agent}
+                               )
 
         self._logger.info("Preparing request to send")
         return all_proxies

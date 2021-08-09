@@ -1,6 +1,6 @@
 fake-useragent==0.1.11
 requests==2.21.0
-streamlink==2.0.0
+streamlink==2.3.0
 python-dotenv==0.14.0
 pydantic==1.7.2
 dependency-injector==4.5.4
