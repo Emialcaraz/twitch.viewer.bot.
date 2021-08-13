@@ -5,4 +5,4 @@ ACCEPT = "application/x-mpegURL, application/vnd.apple.mpegurl, application/json
 ENCODING = "gzip, deflate, br"
 PRAGMA = "no-cache"
 CONNECTION = "Keep-Alive"
-CLIENT_ID = "ewvlchtxgqq88ru9gmfp1gmyt6h2b93"
+CLIENT_ID = "b31o4btkqth5bzbvr9ub2ovr79umhh"

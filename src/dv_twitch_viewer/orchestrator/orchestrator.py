@@ -44,37 +44,37 @@ class Orchestrator:
             x.join()
 
     def get_url(self, proxy_data):
-        session = Streamlink()
-        session.set_option("http-proxy", proxy_data['proxy'])
-        session.set_option("https-proxy", proxy_data['proxy'])
-        session.set_option("http-headers",
-                           {'User-Agent': proxy_data['user_agent']})
 
-        streams = session.streams(proxy_data['channel'])
-        if streams:
-            current_url = streams['worst'].url
+        self._logger.info(f"creating viewer with {proxy_data['proxy']}", )
 
-            self._logger.info(f"creating viewer with {proxy_data['proxy']}", )
+        timeout = 900  # 15 minutes in seconds
+        timeout_start = time.time()
 
-            timeout = random.randint(700, 900)  # 15 minutes in seconds
-            timeout_start = time.time()
+        while time.time() < timeout_start + timeout:
 
-            while time.time() < timeout_start + timeout:
+            session = Streamlink()
+            session.set_option("http-proxy", proxy_data['proxy'])
+            session.set_option("https-proxy", proxy_data['proxy'])
+            session.set_option("http-headers",
+                               {'User-Agent': proxy_data['user_agent'], 'Client-ID': 'b31o4btkqth5bzbvr9ub2ovr79umhh'})
+
+            streams = session.streams(proxy_data['channel'])
+            if streams:
+                current_url = streams['worst'].url
                 self.open_url(proxy_data=proxy_data, current_url=current_url)
-                time.sleep(2)
-            else:
-                self._logger.info(f"Stopping viewer with {proxy_data['proxy']}", )
-                self.get_url(proxy_data)
+
+            time.sleep(5)
 
     def open_url(self, proxy_data, current_url):
         try:
             current_proxy = {"http": proxy_data['proxy'], "https": proxy_data['proxy']}
 
-            with requests.Session() as s:
-                response = s.head(current_url, proxies=current_proxy, headers=proxy_data['headers'])
-                self._logger.info(
-                    f"Sent HEAD request with {current_proxy['http']} | "
-                    f"{response.status_code}")
+            r = requests.get(current_url, proxies=current_proxy, headers=proxy_data['headers'])
+
+            self._logger.info(
+                f"Sent HEAD request with {current_proxy['http']} | "
+                f"{r.status_code}")
+
         except BaseException as error:
             self._logger.error('An exception occurred: {}'.format(error))
 
@@ -98,19 +98,21 @@ class TwitchOrchestrator:
         lines = get_ua()
         all_proxies = []
 
-        for p in proxies:
-            user_agent = random.choice(lines)
+        for idx, p in enumerate(proxies):
+            user_agent = lines[idx]
 
-            headers = {'User-Agent': user_agent, 'Connection': 'Keep-Alive', 'referrer': random.choice(constants.REFS),
-                       'Accept': 'application/x-mpegURL, application/vnd.apple.mpegurl, application/json, text/plain',
-                       'Accept-Encoding': 'gzip, deflate, br',
+            headers = {'User-Agent': user_agent,
+                       'Connection': constants.CONNECTION,
+                       'referrer': random.choice(constants.REFS),
+                       'Accept': constants.ACCEPT,
+                       'Accept-Encoding': constants.ENCODING,
                        'Accept-Language': random.choice(constants.LENG),
-                       'Pragma': 'no-cache'
+                       'Pragma': constants.PRAGMA,
+                       'Client-ID': constants.CLIENT_ID
                        }
 
             all_proxies.append({'proxy': p,
                                 'time': start_time,
-                                'url': '',
                                 'channel': channel_url,
                                 'headers': headers,
                                 'user_agent': user_agent}
