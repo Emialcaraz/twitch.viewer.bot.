@@ -25,6 +25,7 @@ class Settings(BaseSettings):
 
     # Twitch
     TWITCH_URL: str
+    VIEWERS: str = "50"
 
     # Logging
     LOG_FILE: str = "log"
